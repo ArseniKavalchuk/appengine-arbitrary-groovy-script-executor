@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appengine-web-app xmlns="http://appengine.google.com/ns/1.0">
+
+    <application>@appengine.app.name@</application>
+    <version>@appengine.app.version@</version>
+    <module>@appengine.app.module@</module>
+    <threadsafe>true</threadsafe>
+
+    <instance-class>B2</instance-class>  
+    <basic-scaling>
+        <max-instances>3</max-instances>
+    </basic-scaling>
+
+    <static-files>
+        <include path="/ui/**.*" />
+        <include path="/favicon.ico" />
+    </static-files>
+
+    <!-- Configure java.util.logging -->
+    <system-properties>
+        <property name="java.util.logging.config.file" value="WEB-INF/logging.properties" />
+    </system-properties>
+    
+    <use-google-connector-j>true</use-google-connector-j>
+
+</appengine-web-app>

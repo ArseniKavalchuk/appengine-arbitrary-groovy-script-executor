@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:lang="http://www.springframework.org/schema/lang"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/lang
+        http://www.springframework.org/schema/lang/spring-lang.xsd">
+        
+        
+    <bean id="abstractScriptCommand" abstract="true">
+        <property name="scriptStorageService" ref="googleCloudStorageScriptStorageService" />
+        <property name="userScriptService" ref="googleCloudStorageUserScriptService" />
+    </bean>
+    
+    <bean id="executeScriptDirectCommand" class="com.severn.script.service.command.ExecuteScriptDirectRequestCommand" parent="abstractScriptCommand" scope="prototype" />
+    
+    <bean id="listScriptsCommand" class="com.severn.script.service.command.ListScriptsRequestCommand" parent="abstractScriptCommand" scope="prototype" />
+    
+    <bean id="saveScriptCommand" class="com.severn.script.service.command.SaveScriptRequestCommand" parent="abstractScriptCommand" scope="prototype" />
+    
+    <bean id="loadScriptCommand" class="com.severn.script.service.command.LoadScriptRequestCommand" parent="abstractScriptCommand" scope="prototype" />
+    
+    <bean id="listRecentScriptsCommand" class="com.severn.script.service.command.ListRecentScriptsRequestCommand" parent="abstractScriptCommand" scope="prototype" />
+    
+    <bean id="getLastEditedScriptCommand" class="com.severn.script.service.command.GetLastEditedScriptRequestCommand" parent="abstractScriptCommand" scope="prototype" />
+    
+</beans>

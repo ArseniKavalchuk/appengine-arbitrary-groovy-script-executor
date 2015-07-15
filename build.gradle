@@ -1,0 +1,173 @@
+import org.apache.tools.ant.filters.*
+
+task wrapper(type: Wrapper) { gradleVersion = '2.4' }
+
+def appEngineVersion = '1.9.21'
+def springVersion = '4.1.0.RELEASE'
+
+def appName = hasProperty('appName') ? appName : 'dev'
+def appVersion = hasProperty('appVersion') ? appVersion : '1'
+def appModule = hasProperty('appModule') ? appModule : 'default'
+
+class GameProjectConfig {
+    String appEngineAppName = 'dev'
+    String appEngineAppVersion = '1'
+    String appEngineModule = 'default'
+}
+
+def gameProjectConfig = new GameProjectConfig()
+gameProjectConfig.appEngineAppName = appName
+gameProjectConfig.appEngineAppVersion = appVersion
+gameProjectConfig.appEngineModule = appModule
+
+println "Running script with appEngineAppVersion=${gameProjectConfig.appEngineAppVersion}, appEngineAppName=${gameProjectConfig.appEngineAppName}, appEngineModuleName=${gameProjectConfig.appEngineModule}"
+
+List gradleAppEnginePlugin = [
+    "com.google.appengine:gradle-appengine-plugin:${appEngineVersion}"
+]
+
+List appEngine = [
+    "com.google.appengine:appengine-api-1.0-sdk:${appEngineVersion}",
+    "com.google.appengine:appengine-endpoints:${appEngineVersion}",
+    "com.google.appengine:appengine-endpoints-deps:${appEngineVersion}",
+    //"com.google.appengine:appengine-tools-sdk:${appEngineVersion}"
+]
+
+List gcsClient = [
+    "com.google.appengine.tools:appengine-gcs-client:0.4.4"
+]
+
+List servletApi = [
+    "javax.servlet:servlet-api:2.5",
+    "javax.servlet.jsp:jsp-api:2.1",
+    "jstl:jstl:1.2"
+]
+
+List spring = [
+    "org.springframework:spring-core:${springVersion}",
+    "org.springframework:spring-jdbc:${springVersion}",
+    "org.springframework:spring-web:${springVersion}",
+    "org.springframework:spring-context:${springVersion}"
+]
+
+List allTest = [
+    "junit:junit:4.11",
+    "org.springframework:spring-test:${springVersion}",
+    "org.mockito:mockito-all:1.9.0",
+    "com.google.appengine:appengine-testing:${appEngineVersion}",
+    "com.google.appengine:appengine-api-stubs:${appEngineVersion}",
+    "com.google.appengine:appengine-tools-sdk:${appEngineVersion}",
+]
+
+List commonProject = [
+    'com.google.code.gson:gson:2.3',
+    'com.google.guava:guava:18.0',
+    'joda-time:joda-time:2.5'
+]
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.google.appengine:gradle-appengine-plugin:1.9.21'
+    }
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven {
+        url 'https://raw.githubusercontent.com/slorber/gcm-server-repository/master/releases/'
+    }
+}
+
+group = 'com.github.arsenyko'
+apply plugin: 'java'
+apply plugin: 'war'
+apply plugin: 'appengine'
+apply plugin: 'eclipse-wtp'
+
+compileJava.options.encoding = 'UTF-8'
+compileTestJava.options.encoding = 'UTF-8'
+
+version = appVersion;
+
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+dependencies {
+    appengineSdk "com.google.appengine:appengine-java-sdk:${appEngineVersion}"
+    compile servletApi, commonProject, spring, appEngine, gcsClient
+    compile 'org.codehaus.groovy:groovy-all:2.4.3'
+    testCompile allTest
+}
+
+processResources {
+    filesMatching('**/*.xml') {
+        println "Filtering: ${it}"
+        filter ReplaceTokens, tokens: [
+            'appEngineAppName': gameProjectConfig.appEngineAppName,
+            'appEngineAppVersion': gameProjectConfig.appEngineAppVersion,
+            'appEngineModuleName': gameProjectConfig.appEngineModule,
+        ]
+    }
+}
+
+war {
+    filesMatching('WEB-INF/*.xml') {
+        println "WAR filtering: ${it}"
+        filter ReplaceTokens, tokens: [
+            'appengine.app.name': gameProjectConfig.appEngineAppName,
+            'appengine.app.version': gameProjectConfig.appEngineAppVersion,
+            'appengine.app.module': gameProjectConfig.appEngineModule
+        ]
+    }
+}
+    
+eclipse {
+    project {
+        natures 'org.eclipse.wst.common.project.facet.core.nature'
+    }
+    classpath {
+        downloadJavadoc = true
+        downloadSources = true
+    }
+    wtp {
+        facet.file {
+            withXml {
+                def root = it.asNode()
+                root.children().findAll {
+                    it.name() == 'installed' && it.@facet == 'jst.web'
+                }.each { it.replaceNode(new Node(root, 'installed', ['facet': 'jst.web', 'version': '2.5'])) }
+                root.appendNode(new Node(root, 'installed', ['facet': 'com.google.appengine.facet', 'version': '1']))
+            }
+        }
+    }
+}
+
+plugins.withType(com.google.appengine.AppEnginePlugin.class) {
+    gradle.taskGraph.whenReady { TaskExecutionGraph taskGraph ->
+        if(taskGraph.hasTask(":${name}:appengineFunctionalTest")) {
+            println "Disabling :${name}:appengineFunctionalTest!"
+            tasks.getByName('appengineRun').enabled = false
+            tasks.getByName('appengineFunctionalTest').enabled = false
+            tasks.getByName('processFunctionalTestResources').enabled = false
+            tasks.getByName('compileFunctionalTestJava').enabled = false
+            tasks.getByName('functionalTestClasses').enabled = false
+        }
+    }
+}
+
+appengine {
+
+    httpPort = 8888
+    downloadSdk = true
+    jvmFlags = ['-Xdebug', '-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=8000', '-XX:MaxPermSize=128m', '-Xmx512m']
+    appcfg {
+        oauth2 = true
+    }
+}
+    
+
+

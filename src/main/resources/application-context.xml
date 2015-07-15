@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:lang="http://www.springframework.org/schema/lang"
+    xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/lang
+        http://www.springframework.org/schema/lang/spring-lang.xsd">
+
+    <context:property-placeholder location="classpath:app.properties" order="1" />
+
+    <bean id="scriptFormHandler" class="com.severn.script.servlet.ScriptFormHandler">
+        <property name="viewTemplate" value="/WEB-INF/view/run-script.jsp" />
+        <property name="sampleContent">
+            <bean id="contents" class="java.lang.String">
+                <constructor-arg>
+                    <bean class="org.springframework.util.FileCopyUtils" factory-method="copyToByteArray">
+                        <constructor-arg value="classpath:sampleContent.groovy" type="java.io.InputStream" />
+                    </bean>
+                </constructor-arg>
+            </bean>
+        </property>
+    </bean>
+
+    <bean id="commandHandler" class="com.severn.script.servlet.CommandHandler">
+        <property name="commandFactory" ref="commandFactory" />
+    </bean>
+    
+    <bean id="commandFactory" class="com.severn.script.service.command.SpringCommandFactoryImpl" />
+    
+    <bean id="googleCloudStorageScriptStorageService" class="com.severn.script.service.GoogleCloudStorageScriptStorageService">
+        <property name="bucket" value="${script.storage.bucket:my-server-scripts}" />
+    </bean>
+    
+    <bean id="googleCloudStorageUserScriptService" class="com.severn.script.service.GoogleAppEngineUserScriptService" />
+
+    <import resource="classpath:command-context.xml" />
+    
+</beans>
